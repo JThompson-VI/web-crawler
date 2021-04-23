@@ -27,8 +27,8 @@ def crawl(url):
         print("\tTODO: Print this URL with indentation indicating the current depth of recursion")
         response = requests.get(url)
         if not response.ok:
-            print(f"crawl({url}): {r.status_code} {r.reason}")
-            return 
+            print(f"crawl({url}): {response.status_code} {response.reason}")
+            return
 
         html = BeautifulSoup(response.text, 'html.parser')
         links = html.find_all('a')
@@ -37,7 +37,7 @@ def crawl(url):
             if link:
                 # Create an absolute address from a (possibly) relative URL
                 absoluteURL = urljoin(url, link)
-                
+
                 # Only deal with resources accessible over HTTP or HTTPS
                 if absoluteURL.startswith('http'):
                     print(absoluteURL)
