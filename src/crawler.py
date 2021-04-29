@@ -8,7 +8,7 @@ from urllib.parse import urlparse, urljoin
 import sys
 
 
-def crawl(url):
+def crawl(url, depth=0, maxDepth=3, visited=None):
     """
     Given an absolute URL, print each hyperlink found within the document.
 
@@ -21,14 +21,23 @@ def crawl(url):
     You will need to change this function's signature to fulfill this
     assignment.
     """
+    if visited is None:
+        visited = set()
 
-    print("\tTODO: Check the current depth of recursion; return now if you have gone too deep")
+    if depth > maxDepth:
+        return
+
     try:
-        print("\tTODO: Print this URL with indentation indicating the current depth of recursion")
+        print(" " * 4 * depth + url)
         response = requests.get(url)
         # check if status code of url is >= 400  and therefore likely reachable
         if not response.ok:
             print(f"crawl({url}): {response.status_code} {response.reason}")
+            return
+
+        visited.add(url)
+
+        if depth == maxDepth:
             return
 
         html = BeautifulSoup(response.text, 'html.parser')
@@ -38,15 +47,16 @@ def crawl(url):
             if link:
                 # Create an absolute address from a (possibly) relative URL
                 absoluteURL = urljoin(url, link)
+                parsed = urlparse(absoluteURL)
+                if parsed.fragment:
+                    absoluteURL = absoluteURL.split('#')[0]
 
-                # Only deal with resources accessible over HTTP or HTTPS
-                if absoluteURL.startswith('http'):
-                    print(absoluteURL)
+                if absoluteURL in visited:
+                    continue
+                visited.add(absoluteURL)
+                if absoluteURL.startswith("http"):
+                    crawl(absoluteURL, depth=depth + 1, maxDepth=maxDepth, visited=visited)
 
-        print("\n\tTODO: Don't just print URLs found in this document, visit them!")
-        print("\tTODO: Trim fragments ('#' to the end) from URLs")
-        print("\tTODO: Use a `set` data structure to keep track of URLs you've already visited")
-        print("\tTODO: Call crawl() on unvisited URLs")
 
     except Exception as e:
         print(f"crawl(): {e}")
@@ -60,17 +70,34 @@ if len(sys.argv) < 2:
 else:
     url = sys.argv[1]
 
-print("\tTODO: determine whether variable `url` contains an absolute URL")
+parsed = urlparse(url)
+if not parsed.scheme or not parsed.netloc:
+    print("The url you provide must be an absolute url")
+    sys.exit(1)
 
-print("\tTODO: allow the user to optionally override the default recursion depth of 3")
-maxDepth = 3
+
+if len(sys.argv) > 2:
+    maxDepth = sys.argv[2]
+    try:
+        maxDepth = int(maxDepth)
+    except:
+        print("Max depth must be an integer")
+        sys.exit(1)
+
+    if maxDepth < 0:
+        print("Max depth must be an integer greater than zero")
+        sys.exit(1)
+else:
+    maxDepth = 3
 
 plural = 's'
 if maxDepth == 1:
     plural = ''
 
 print(f"Crawling from {url} to a maximum depth of {maxDepth} link{plural}")
-print("\tTODO: crawl() keeps track of the max depth itself: no globals allowed!")
-crawl(url)
+if len(sys.argv) > 2:
+    crawl(url, maxDepth=maxDepth)
 
-print("\tTODO: delete each TODO message as you fulfill it")
+else:
+    crawl(url)
+
