@@ -4,76 +4,129 @@
 
 # 0.  From Problem Analysis to Data Definitions
 
-**Problem Analysis is the process of understanding the problem the software
-will address and to document in detail what the software system needs to do.
-In the real world this phase demands close interaction between developers and
-the client.  Ideally, end-users of the system are interviewed for their input.**
+    -what the system is currently doing
+        - sends get request for provided absolute URL
+        - ensures the status code is < 400
+        - parses the contents of the html document for <a> tags and extracts the links from them as strings
+            - creates an absolute URL from possible partial URL given by href
+        - prints all links on the page with scheme http or https
 
-**In this course you will receive detailed requirements in the form of the
-assignment description.  I stand-in for the client and end-users when you have
-questions concerning their needs and desires.**
-
-**In this phase of the design process you should use [The Feynman
-Technique](https://www.youtube.com/watch?v=tkm0TNFzIeg) To ensure that you
-understand what is being asked of you.**
-
-**The output of this phase of the development process is a restatement of the
-requirements in your own words.  Putting new problems into your own words will
-help you identify your "Known knowns" and your "known unknowns".**
-
-**As part of your restatement of the problem identify information that must be
-represented and decide how to represent in the chosen programming language.**
-
-**Formulate data definitions and illustrate them with examples.**
+    - what it needs to do that it isn't already doing
+        - crawl must take parameters: URL, depth, maxDepth, visited
+            - maxDepth default value is three or is argv[2] if supplied by user
+            - visited is a set of already visited URL's
+            - depth starts at 0
+        - crawl must include the base case if no new links are found return out of crawl
+        - base case 2: if depth = maxDepth visit and print all unvisited links
+        - if depth < maxDepth call crawl recursively with the url of the first encountered link.
+            - increment depth
+            - update visited
+            - print visited url with tabs indicating depth
+        - use urlparse to discard any fragments, treat url with fragment as same as url without
 
 
 # 1.  System Analysis
+*Signature*
+def crawl(URL, depth=0, maxDepth=3, visited=set())
+parameters
+-------------------
+- URL is provided from the command line and is required
+    - function will not handle error for when url is not provided
+- depth will always start at 0
+- maxDepth can be provided by the user from the command line (must be a positive integer CAN BE 0)
+    - Remember to convert sys.argv[2] into an int
+    - function will not check for input validity
+- visited is always an empty set
+--------------------------
+data flow through function
+--------------------------
+- Check current depth of recursion return immediately if depth > maxDepth
+- print url with spaces * 4 * depth (to indicate depth of recursion in output)
+- send get request for param URL
+    - check status code of response object if not response.ok print status code and reason then return
+- parse document provided by param URL
+- extract all <a> tags into a list
+- iterate over list extracting links via BeautifulSoup(response.text, 'href')
+    - if there is a non empty href use urljoin to create an absolute url from possible relative url
+    - use urlparse to find fragments
+    - if parsed.fragment: split at the hash mark and point new URL at parsed[0]
+    - check if the new absolute URL is in visited
+        - if in visited continue
+        - if not in visited add to visited
+            - if depth = maxDepth continue looping through all links and return from crawl
+            - check current depth if maxDepth not yet reached
+            - leave the loop
 
-**Analyze the flow of data throughout the program.  Does the program get input
-from the user?  If so, does it come from interactive prompts or from
-command-line arguments?  Is data incorporated from a file on the disk, from a
-database or from the internet?**
+            - make a recursive call to crawl with the new URL and increment depth
 
-**How is output given?  On the screen in the form of text or graphics?  Are
-output files created, and what form do they take?**
-
-**Identify the non-trivial formulas you need to create.  If there aren't any then
-state "no formulas" in this section.**
-
-**State what kind of data each desired function consumes and produces.  Formulate
-a concise description of what the function computes.  Define a stub that lives
-up to the signature.**
+- crawl returns nothing, all output is in the form of printed statements
 
 
 # 2.  Functional Examples
 
-**Design a process for obtaining the output from the input.  Consider both *good*
-and *bad* inputs.  Find or create examples of both kinds of input.**
+def crawl(URL, depth=0, maxDepth=3, visited=set())
+    if depth > maxDepth:
+        return
+    print(" " * 4 * depth + URL)
+    response = requests.get(URL)
+    if not response.ok:
+        print status code and reason info
+        return
 
-**Work out problem examples on paper, on a whiteboard or some other medium that
-is *not* your computer.  It is a mistake to begin writing executable code
-before you thoroughly understand what form the algorithm(s) must take.**
+    if depth = maxDepth:
+        return
 
-**Instead, describe components of the system in *"pseudocode"*.  Expect to make
-lots of mistakes at this point.  You will find that it is much easier to throw
-away pseudocode than real code.**
+    html = BeautifulSoup(response.text, 'html.parser')
+    links = html.find_all('a')
+    for a in links:
+        link = a.get('href')
+        if link:
+            absoluteurl = create absolute url from url and link
+            parse absolute url
+            if parsed.fragment:
+                absoluteurl = absoluteurl.split("#")[0]
 
-**Manually work through several examples that illustrate the program's overall
-purpose, as well as the purpose of each component of the finished system.  You
-will converge on a correct solution much faster if you feel comfortable making
-mistakes as you go.**
+            if absoluteurl in visited:
+                continue
+            add absoluteurl to visited
 
-**This phase involves the use of many levels of abstraction to decompose the
-problem into manageable components, and design strategies for implementing each
-component.  Components may be functions, modules or classes.**
+            if not absoluteurl startswith http:
+                continue
+
+            call crawl recursively with (absoluteurl, depth + 1, visited = visited)
 
 
 # 3.  Function Template
 
-**Combine the function stubs written in step #2 with pseudocode from step #3.
-Comment out the pseudocode, leaving a valid program that compiles/runs without
-errors.  At this stage your program doesn't quite work, but it also doesn't
-crash.**
+def crawl(url, depth=0, maxDepth=3, visited=set())
+    if depth > maxDepth:
+        return
+    try:
+        print(" " * 4 * depth + url)
+        response = requests.get(url)
+        if not response.ok:
+            print(f"crawl({url}): {response.status_code} {response.reason}")
+            return
+
+        if depth = maxDepth:
+            return
+
+        html = BeautifulSoup(response.text, 'html.parser')
+        links = html.find_all('a')
+            for a in links:
+                link = a.get('href')
+                if link:
+                    absoluteURL = urljoin(url, link)
+                    parsed = urlparse(absoluteURL)
+                    if parsed.fragment:
+                        absoluteURL = absoluteURL.split('#')[0]
+                    if absoluteURL in visited:
+                        continue
+                    visited.add(absoluteURL)
+                    if absoluteURL.startswith('http'):
+                        crawl(absoluteURL, depth = depth + 1, maxDepth, visited)
+
+
 
 
 # 4.  Implementation

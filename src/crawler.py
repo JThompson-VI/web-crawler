@@ -26,6 +26,7 @@ def crawl(url):
     try:
         print("\tTODO: Print this URL with indentation indicating the current depth of recursion")
         response = requests.get(url)
+        # check if status code of url is >= 400  and therefore likely reachable
         if not response.ok:
             print(f"crawl({url}): {response.status_code} {response.reason}")
             return
